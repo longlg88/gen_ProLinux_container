@@ -1,0 +1,94 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+import os
+import sys
+import datetime
+import subprocess
+from shutil import copyfile
+import shutil
+
+#now=datetime.datetime.now()
+#nowTime=now.strftime('%Y%m%d_%H%M%S')
+#fname="venv/log/log"+nowTime
+
+## docker install
+def docker_install():
+	print('docker-ce install first')
+	copyfile('/etc/apt/sources.list','/etc/apt/sources.list_org')
+	os.system('apt-get -y install apt-transport-https ca-certificates curl software-properties-common')
+	os.system('curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -')
+	os.system('apt-key fingerprint 0EBFCD88')
+	with open('/etc/apt/sources.list', 'a') as f_docker:
+		f_docker.write('deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable')
+	f_docker.close()
+
+	os.system('apt update')
+	os.system('apt-get -y install docker-ce')
+	shutil.move('/etc/apt/sources.list_org','/etc/apt/sources.list')
+
+
+## Install debootstrap
+def install_debootstrap():
+	os.system('apt-get -y install debootstrap')
+
+	## Make base image for using debootstrap
+	if os.path.isdir('bionic'):
+		print("\nRoot exists!\n");
+	else:
+		os.system('debootstrap bionic bionic')
+
+## Copy /etc/apt/sources.list
+def copy_sourcelist():
+	pwd=os.getcwd()
+	copyfile('/etc/apt/sources.list', pwd+'/bionic/etc/apt/sources.list')
+
+def make_prolinux():
+	os.chroot('./bionic')
+	os.chdir('/root/')
+
+	## Make ProLinux
+	## 1. modify /etc/dpkg/origins/ubuntu to prolinux
+	f_origins=open('/etc/dpkg/origins/prolinux','w')
+	f_origins.write("""Vendor: ProLinux\n
+Vendor-URL: http://www.tmaxos.com/\n
+Parent: Debian""")
+
+	os.system('rm -f /etc/dpkg/origins/default')
+	os.system('ln -s /etc/dpkg/origins/prolinux /etc/dpkg/origins/default')
+	f_origins.close()
+
+	## 2. modify /etc/os-release /etc/lsb-release
+	print('\nSecond process enter')
+	f_os_release=open('/etc/os-release','w')
+	f_os_release.write("""NAME="ProLinux"
+VERSION="ProLinux 4.2.0 (Bionic Beaver)"
+ID=prolinux
+ID_LIKE=debian
+PRETTY_NAME="ProLinux 4.2.0"
+VERSION_ID="4.2.0"
+VERSION_CODENAME=bionic
+PROLINUX_CODENAME=bionic""")
+
+	f_lsb_release=open('/etc/lsb-release','w')
+	f_lsb_release.write("""DISTRIB_ID=ProLinux
+DISTRIB_RELEASE=4.2.0
+DISTRIB_CODENAME=bionic
+DISTRIB_DESCRIPTION="ProLinux 4.2.0" """)
+	f_os_release.close()
+	f_lsb_release.close()
+	os.system('cat /etc/*-release')
+
+	## 3. apt install language-pack-ko
+	print("\n\nThird process enter!")
+	os.system('apt-get -y install language-pack-ko')
+	
+	## 4. uname -a check
+	print('\n')
+	os.system('uname -a')
+	print('Finish to make ProLinux')
+	
+
+docker_install()
+install_debootstrap()
+copy_sourcelist()
+make_prolinux()

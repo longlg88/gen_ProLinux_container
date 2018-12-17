@@ -1,0 +1,45 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+import os
+import sys
+import subprocess
+import re
+
+def findThisProcess(proc_name, id=0):
+	ps = subprocess.Popen("ps ax -o pid= -o args= ", shell=True, stdout=subprocess.PIPE)
+	ps_pid = ps.pid
+	output = ps.stdout.read()
+	ps.stdout.close()
+	ps.wait()
+	if os.path.isfile('xx'):
+		print('pass')
+	else:
+		with open('xx','x') as f:
+			f.write(output.decode('ascii'))
+
+	with open('xx') as fa:
+		for line in fa:
+			str=line.split('\n')[0]
+			if re.search(proc_name, str[15:23]):
+				return True
+	fa.close()
+	return False
+
+
+def make_tar():
+	
+	print('\n\nNow... Make full imag using tar')
+	print('First, Check if docker is alive')
+	
+	if findThisProcess('dockerd'):
+		print('Find it')
+	else:
+		print('Not Found')
+	## Make prolinux image in docker images
+	os.system('tar -C bionic -c . | docker import - prolinux')
+
+	## Make tar for prolinux
+	os.system('docker save -o prolinux_lxc_images.tar prolinux:latest')
+
+make_tar()

@@ -80,6 +80,7 @@ DISTRIB_DESCRIPTION="ProLinux 4.2.0" """)
 
 	## 3. apt install language-pack-ko
 	print("\n\nThird process enter!")
+	os.system('apt update')
 	os.system('apt-get -y install language-pack-ko')
 	
 	## 4. uname -a check
